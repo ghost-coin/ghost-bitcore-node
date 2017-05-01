@@ -11,7 +11,6 @@ var http = require('http');
 var Unit = bitcore.Unit;
 var Transaction = bitcore.Transaction;
 var PrivateKey = bitcore.PrivateKey;
-var crypto = require('crypto');
 
 var utils = {};
 
@@ -73,21 +72,22 @@ utils.queryBitcoreNode = function(httpOpts, callback) {
   request.end();
 };
 
-utils.waitForBitcoreNode = function(callback) {
+utils.waitForBitcoreNode = function(opts, callback) {
 
-  bitcore.process.stdout.on('data', function(data) {
-    if (debug) {
+  var self = this;
+  opts.bitcore.process.stdout.on('data', function(data) {
+    if (opts.debug) {
       console.log(data.toString());
     }
   });
 
-  bitcore.process.stderr.on('data', function(data) {
+  opts.bitcore.process.stderr.on('data', function(data) {
     console.log(data.toString());
   });
 
   var errorFilter = function(err, res) {
     try {
-      if (JSON.parse(res).height === blockHeight) {
+      if (JSON.parse(res).height === opts.blockHeight) {
         return;
       }
       return res;
@@ -96,29 +96,39 @@ utils.waitForBitcoreNode = function(callback) {
     }
   };
 
-  var httpOpts = getHttpOpts({ path: '/wallet-api/info', errorFilter: errorFilter });
+  var httpOpts = self.getHttpOpts({ path: '/wallet-api/info', errorFilter: errorFilter });
 
-  waitForService(queryBitcoreNode.bind(this, httpOpts), callback);
+  self.waitForService(self.queryBitcoreNode.bind(self, httpOpts), callback);
 };
 
-utils.waitForBitcoinReady = function(callback) {
-  waitForService(function(callback) {
-    rpc.generate(initialHeight, function(err, res) {
+utils.waitForBitcoinReady = function(opts, callback) {
+
+  var self = this;
+  self.waitForService(function(callback) {
+
+    opts.rpc.generate(opts.initialHeight, function(err, res) {
+
       if (err || (res && res.error)) {
         return callback('keep trying');
       }
-      blockHeight += initialHeight;
+      opts.blockHeight += opts.initialHeight;
       callback();
     });
   }, function(err) {
+
     if(err) {
       return callback(err);
     }
+
     callback();
+
   }, callback);
-}
+
+};
 
 utils.initializeAndStartService = function(opts, callback) {
+
+  var self = this;
   rimraf(opts.datadir, function(err) {
     if(err) {
       return callback(err);
@@ -128,34 +138,38 @@ utils.initializeAndStartService = function(opts, callback) {
         return callback(err);
       }
       if (opts.configFile) {
-        writeConfigFile(opts.configFile.file, opts.configFile.conf);
+        self.writeConfigFile(opts.configFile.file, opts.configFile.conf);
       }
-      var args = _.isArray(opts.args) ? opts.args : toArgs(opts.args);
+      var args = _.isArray(opts.args) ? opts.args : self.toArgs(opts.args);
       opts.process = spawn(opts.exec, args, opts.opts);
       callback();
     });
   });
-}
 
-utils.startBitcoreNode = function(callback) {
-  initializeAndStartService(bitcore, callback);
-}
+};
 
-utils.startBitcoind = function(callback) {
-  initializeAndStartService(bitcoin, callback);
-}
+utils.startBitcoreNode = function(opts, callback) {
+  this.initializeAndStartService(opts.bitcore, callback);
+};
 
-utils.unlockWallet = function(callback) {
-  rpc.walletPassPhrase(walletPassphrase, 3000, function(err) {
+utils.startBitcoind = function(opts, callback) {
+  this.initializeAndStartService(opts.bitcoin, callback);
+};
+
+utils.unlockWallet = function(opts, callback) {
+  this.rpc.walletPassPhrase(opts.walletPassphrase, 3000, function(err) {
     if(err && err.code !== -15) {
       return callback(err);
     }
     callback();
   });
-}
+};
 
 utils.getPrivateKeysWithABalance = function(callback) {
-  rpc.listUnspent(function(err, res) {
+
+  var self = this;
+  self.rpc.listUnspent(function(err, res) {
+
     if(err) {
       return callback(err);
     }
@@ -170,13 +184,15 @@ utils.getPrivateKeysWithABalance = function(callback) {
       return callback(new Error('no utxos available'));
     }
     async.mapLimit(utxos, 8, function(utxo, callback) {
-      rpc.dumpPrivKey(utxo.address, function(err, res) {
+
+      self.rpc.dumpPrivKey(utxo.address, function(err, res) {
         if(err) {
           return callback(err);
         }
         var privKey = res.result;
         callback(null, { utxo: utxo, privKey: privKey });
       });
+
     }, function(err, utxos) {
       if(err) {
         return callback(err);
@@ -184,11 +200,14 @@ utils.getPrivateKeysWithABalance = function(callback) {
       callback(null, utxos);
     });
   });
-}
+
+};
 
 utils.generateSpendingTxs = function(utxos) {
+
+  var self = this;
   return utxos.map(function(utxo) {
-    txCount++;
+    self.txCount++;
     var toPrivKey = new PrivateKey('testnet'); //external addresses
     var changePrivKey = new PrivateKey('testnet'); //our wallet keys
     var utxoSatoshis = Unit.fromBTC(utxo.utxo.amount).satoshis;
@@ -197,77 +216,89 @@ utils.generateSpendingTxs = function(utxos) {
 
     tx.from(utxo.utxo);
     tx.to(toPrivKey.toAddress().toString(), satsToPrivKey);
-    tx.fee(fee);
+    tx.fee(self.fee);
     tx.change(changePrivKey.toAddress().toString());
     tx.sign(utxo.privKey);
 
-    walletPrivKeys.push(changePrivKey);
-    satoshisReceived += Unit.fromBTC(utxo.utxo.amount).toSatoshis() - (satsToPrivKey + fee);
+    self.walletPrivKeys.push(changePrivKey);
+    self.satoshisReceived += Unit.fromBTC(utxo.utxo.amount).toSatoshis() - (satsToPrivKey + self.fee);
     return tx;
   });
-}
 
-utils.setupInitialTxs = function(callback) {
-  getPrivateKeysWithABalance(function(err, utxos) {
+};
+
+utils.setupInitialTxs = function(opts, callback) {
+
+  var self = this;
+  self.getPrivateKeysWithABalance(function(err, utxos) {
     if(err) {
       return callback(err);
     }
-    initialTxs = generateSpendingTxs(utxos);
+    opts.initialTxs = self.generateSpendingTxs(utxos);
     callback();
   });
-}
 
-utils.sendTxs = function(callback) {
-  async.eachOfSeries(initialTxs, sendTx, callback);
-}
+};
 
-utils.sendTx = function(tx, index, callback) {
-  rpc.sendRawTransaction(tx.serialize(), function(err) {
+utils.sendTxs = function(opts, callback) {
+  async.eachOfSeries(opts.initialTxs, this.sendTx.bind(this, opts), callback);
+};
+
+utils.sendTx = function(opts, tx, index, callback) {
+
+  opts.rpc.sendRawTransaction(tx.serialize(), function(err) {
     if (err) {
       return callback(err);
     }
     var mod = index % 2;
     if (mod === 1) {
-      blockHeight++;
-      rpc.generate(1, callback);
+      opts.blockHeight++;
+      opts.rpc.generate(1, callback);
     } else {
       callback();
     }
   });
-}
 
-utils.getHttpOpts = function(opts) {
+};
+
+utils.getHttpOpts = function(opts, httpOpts) {
   return Object.assign({
-    path: opts.path,
-    method: opts.method || 'GET',
-    body: opts.body,
+    path: httpOpts.path,
+    method: httpOpts.method || 'GET',
+    body: httpOpts.body,
     headers: {
       'Content-Type': 'application/json',
-      'Content-Length': opts.length || 0
+      'Content-Length': httpOpts.length || 0
     },
-    errorFilter: opts.errorFilter
-  }, bitcore.httpOpts);
-}
+    errorFilter: httpOpts.errorFilter
+  }, opts.bitcore.httpOpts);
+};
 
-utils.registerWallet = function(callback) {
-  var httpOpts = getHttpOpts({ path: '/wallet-api/wallets/' + walletId, method: 'POST' });
-  queryBitcoreNode(httpOpts, callback);
-}
+utils.registerWallet = function(opts, callback) {
 
-utils.uploadWallet = function(callback) {
-  var addresses = JSON.stringify(walletPrivKeys.map(function(privKey) {
+  var httpOpts = this.getHttpOpts(opts, { path: '/wallet-api/wallets/' + opts.walletId, method: 'POST' });
+  this.queryBitcoreNode(httpOpts, callback);
+
+};
+
+utils.uploadWallet = function(opts, callback) {
+
+  var self = this;
+  var addresses = JSON.stringify(opts.walletPrivKeys.map(function(privKey) {
     if (privKey.privKey) {
       return privKey.pubKey.toString();
     }
     return privKey.toAddress().toString();
   }));
-  var httpOpts = getHttpOpts({
-    path: '/wallet-api/wallets/' + walletId + '/addresses',
+
+  var httpOpts = self.getHttpOpts(opts, {
+    path: '/wallet-api/wallets/' + opts.walletId + '/addresses',
     method: 'POST',
     body: addresses,
     length: addresses.length
   });
-  async.waterfall([ queryBitcoreNode.bind(this, httpOpts) ], function(err, res) {
+
+  async.waterfall([ self.queryBitcoreNode.bind(self, httpOpts) ], function(err, res) {
     if (err) {
       return callback(err);
     }
@@ -275,10 +306,10 @@ utils.uploadWallet = function(callback) {
 
     Object.keys(job).should.deep.equal(['jobId']);
 
-    var httpOpts = getHttpOpts({ path: '/wallet-api/jobs/' + job.jobId });
+    var httpOpts = self.getHttpOpts(opts, { path: '/wallet-api/jobs/' + job.jobId });
 
     async.retry({ times: 10, interval: 1000 }, function(next) {
-      queryBitcoreNode(httpOpts, function(err, res) {
+      self.queryBitcoreNode(httpOpts, function(err, res) {
         if (err) {
           return next(err);
         }
@@ -296,23 +327,30 @@ utils.uploadWallet = function(callback) {
       callback();
     });
   });
-}
 
-utils.getListOfTxs = function(callback) {
+};
+
+utils.getListOfTxs = function(opts, callback) {
+
+  var self = this;
   var end = Date.now() + 86400000;
-  var httpOpts = getHttpOpts({ path: '/wallet-api/wallets/' + walletId + '/transactions?start=0&end=' + end });
-  queryBitcoreNode(httpOpts, function(err, res) {
+  var httpOpts = self.getHttpOpts(opts, {
+    path: '/wallet-api/wallets/' + opts.walletId + '/transactions?start=0&end=' + end });
+
+  self.queryBitcoreNode(httpOpts, function(err, res) {
     if(err) {
       return callback(err);
     }
     var results = [];
     res.split('\n').forEach(function(result) {
+
       if (result.length > 0) {
         return results.push(JSON.parse(result));
       }
+
     });
 
-    var map = initialTxs.map(function(tx) {
+    var map = opts.initialTxs.map(function(tx) {
       return tx.serialize();
     });
 
@@ -322,28 +360,15 @@ utils.getListOfTxs = function(callback) {
     });
 
     map.length.should.equal(0);
-    results.length.should.equal(initialTxs.length);
+    results.length.should.equal(opts.initialTxs.length);
     callback();
   });
-}
+};
 
-utils.initGlobals = function() {
-  walletPassphrase = 'test';
-  txCount = 0;
-  blockHeight = 0;
-  walletPrivKeys = [];
-  initialTxs = [];
-  fee = 100000;
-  feesReceived = 0;
-  satoshisSent = 0;
-  walletId = crypto.createHash('sha256').update('test').digest('hex');
-  satoshisReceived = 0;
-}
-
-utils.cleanup = function(callback) {
-  bitcore.process.kill();
-  bitcoin.process.kill();
+utils.cleanup = function(opts, callback) {
+  opts.bitcore.process.kill();
+  opts.bitcoin.process.kill();
   setTimeout(callback, 2000);
-}
+};
 
 module.exports = utils;

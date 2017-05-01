@@ -3,10 +3,10 @@
 var chai = require('chai');
 var should = chai.should();
 var async = require('async');
-var bitcore = require('bitcore-lib');
 var BitcoinRPC = require('bitcoind-rpc');
 var path = require('path');
-var utils = require('utils');
+var utils = require('./utils');
+var crypto = require('crypto');
 
 var debug = false;
 var bitcoreDataDir = '/tmp/bitcore';
@@ -23,7 +23,7 @@ var rpcConfig = {
 
 var bitcoin = {
   args: {
-    datadir: bitcoinDataDir,
+    datadir: utils.bitcoinDataDir,
     listen: 0,
     regtest: 1,
     server: 1,
@@ -82,36 +82,57 @@ var bitcore = {
   process: null
 };
 
-var rpc = new BitcoinRPC(rpcConfig);
-var walletPassphrase, txCount, blockHeight, walletPrivKeys,
-initialTxs, fee, walletId, satoshisReceived, satoshisSent, feesReceived;
-var initialHeight = 150;
+var opts = {
+  debug: debug,
+  rpcConfig: rpcConfig,
+  bitcore: bitcore,
+  bitcoin: bitcoin,
+  bitcoinDataDir: bitcoinDataDir,
+  bitcoreDataDir: bitcoreDataDir,
+  rpc: new BitcoinRPC(utils.rpcConfig),
+  walletPassphrase: 'test',
+  txCount: 0,
+  blockHeight: 0,
+  walletPrivKeys: [],
+  initialTxs: [],
+  fee: 100000,
+  feesReceived: 0,
+  satoshisSent: 0,
+  walletId: crypto.createHash('sha256').update('test').digest('hex'),
+  satoshisReceived: 0,
+  initialHeight: 150
+};
 
 describe('Wallet Operations', function() {
 
   this.timeout(60000);
 
-  after(cleanup);
+  var mainOpts;
+  after(utils.cleanup.bind(utils, this.opts));
 
   describe('Register and Upload', function() {
 
     before(function(done) {
-      initGlobals();
+      var self = this;
+      self.opts = mainOpts = Object.assign({}, opts);
       async.series([
-        startBitcoind,
-        waitForBitcoinReady,
-        unlockWallet,
-        setupInitialTxs,
-        startBitcoreNode,
-        waitForBitcoreNode
+        utils.startBitcoind.bind(utils, self.opts),
+        utils.waitForBitcoinReady.bind(utils, self.opts),
+        utils.unlockWallet.bind(utils, self.opts),
+        utils.setupInitialTxs.bind(utils, self.opts),
+        utils.startBitcoreNode.bind(utils, self.opts),
+        utils.waitForBitcoreNode.bind(utils, self.opts)
       ], done);
     });
 
     it('should register wallet', function(done) {
-      registerWallet(function(err, res) {
+
+      utils.registerWallet.call(utils, self.opts,  function(err, res) {
+
         if (err) {
           return done(err);
         }
+
         res.should.deep.equal(JSON.stringify({
           walletId: '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08'
         }));
@@ -120,7 +141,7 @@ describe('Wallet Operations', function() {
     });
 
     it('should upload a wallet', function(done) {
-      uploadWallet(done);
+      utils.uploadWallet.call(utils, self.opts, done);
     });
 
   });
@@ -128,17 +149,18 @@ describe('Wallet Operations', function() {
   describe('Load addresses at genesis block', function() {
 
     before(function(done) {
-      sendTxs(function(err) {
+      self.opts = mainOpts;
+      utils.sendTxs.call(utils, self.opts, function(err) {
         if(err) {
           return done(err);
         }
-        waitForBitcoreNode(done);
+        utils.waitForBitcoreNode.call(utils, self.opts, done);
       });
     });
 
     it('should get a list of transactions', function(done) {
 
-      getListOfTxs(done);
+      utils.getListOfTxs.call(utils, self.opts, done);
 
     });
 
@@ -147,43 +169,46 @@ describe('Wallet Operations', function() {
   describe('Load addresses after syncing the blockchain', function() {
 
     before(function(done) {
-      initGlobals();
+      var self = this;
+      self.opts = Object.assign({}, opts);
       async.series([
-        cleanup,
-        startBitcoind,
-        waitForBitcoinReady,
-        unlockWallet,
-        setupInitialTxs,
-        sendTxs,
-        startBitcoreNode,
-        waitForBitcoreNode,
-        registerWallet,
-        uploadWallet
+        utils.cleanup.bind(utils, self.opts),
+        utils.startBitcoind.bind(utils, self.opts),
+        utils.waitForBitcoinReady.bind(utils, self.opts),
+        utils.unlockWallet.bind(utils, self.opts),
+        utils.setupInitialTxs.bind(utils, self.opts),
+        utils.sendTxs.bind(utils, self.opts),
+        utils.startBitcoreNode.bind(utils, self.opts),
+        utils.waitForBitcoreNode.bind(utils, self.opts),
+        utils.registerWallet.bind(utils, self.opts),
+        utils.uploadWallet.bind(utils, self.opts)
       ], done);
     });
 
     it('should get list of transactions', function(done) {
 
-      getListOfTxs(done);
+      utils.getListOfTxs.call(utils, self.opts, done);
 
     });
 
     it('should get the balance of a wallet', function(done) {
-      var httpOpts = getHttpOpts({ path: '/wallet-api/wallets/' + walletId + '/balance' });
-      queryBitcoreNode(httpOpts, function(err, res) {
+
+      var httpOpts = utils.getHttpOpts.call(utils, self.opts, { path: '/wallet-api/wallets/' + self.opts.walletId + '/balance' });
+      utils.queryBitcoreNode.call(utils, httpOpts, function(err, res) {
         if(err) {
           return done(err);
         }
         var results = JSON.parse(res);
-        results.satoshis.should.equal(satoshisReceived);
+        results.satoshis.should.equal(self.opts.satoshisReceived);
         done();
       });
 
     });
 
     it('should get the set of utxos for the wallet', function(done) {
-      var httpOpts = getHttpOpts({ path: '/wallet-api/wallets/' + walletId + '/utxos' });
-      queryBitcoreNode(httpOpts, function(err, res) {
+
+      var httpOpts = utils.getHttpOpts.call(utils, self.opts, { path: '/wallet-api/wallets/' + utils.walletId + '/utxos' });
+      utils.queryBitcoreNode.call(utils, httpOpts, function(err, res) {
         if(err) {
           return done(err);
         }
@@ -193,15 +218,16 @@ describe('Wallet Operations', function() {
         results.utxos.forEach(function(utxo) {
           balance += utxo.satoshis;
         });
-        results.height.should.equal(blockHeight);
-        balance.should.equal(satoshisReceived);
+
+        results.height.should.equal(self.opts.blockHeight);
+        balance.should.equal(self.opts.satoshisReceived);
         done();
       });
     });
 
     it('should get the list of jobs', function(done) {
-      var httpOpts = getHttpOpts({ path: '/wallet-api/jobs' });
-      queryBitcoreNode(httpOpts, function(err, res) {
+      var httpOpts = utils.getHttpOpts.call(utils, self.opts, { path: '/wallet-api/jobs' });
+      utils.queryBitcoreNode.call(utils, httpOpts, function(err, res) {
         if(err) {
           return done(err);
         }
@@ -212,8 +238,8 @@ describe('Wallet Operations', function() {
     });
 
     it('should remove all wallets', function(done) {
-      var httpOpts = getHttpOpts({ path: '/wallet-api/wallets', method: 'DELETE' });
-      queryBitcoreNode(httpOpts, function(err, res) {
+      var httpOpts = utils.getHttpOpts.call(utils, self.opts, { path: '/wallet-api/wallets', method: 'DELETE' });
+      utils.queryBitcoreNode.call(utils, httpOpts, function(err, res) {
         if(err) {
           return done(err);
         }
