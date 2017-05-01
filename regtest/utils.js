@@ -96,7 +96,7 @@ utils.waitForBitcoreNode = function(opts, callback) {
     }
   };
 
-  var httpOpts = self.getHttpOpts({ path: '/wallet-api/info', errorFilter: errorFilter });
+  var httpOpts = self.getHttpOpts(opts, { path: '/wallet-api/info', errorFilter: errorFilter });
 
   self.waitForService(self.queryBitcoreNode.bind(self, httpOpts), callback);
 };
@@ -129,6 +129,7 @@ utils.waitForBitcoinReady = function(opts, callback) {
 utils.initializeAndStartService = function(opts, callback) {
 
   var self = this;
+
   rimraf(opts.datadir, function(err) {
     if(err) {
       return callback(err);
@@ -157,7 +158,7 @@ utils.startBitcoind = function(opts, callback) {
 };
 
 utils.unlockWallet = function(opts, callback) {
-  this.rpc.walletPassPhrase(opts.walletPassphrase, 3000, function(err) {
+  opts.rpc.walletPassPhrase(opts.walletPassphrase, 3000, function(err) {
     if(err && err.code !== -15) {
       return callback(err);
     }
@@ -165,10 +166,9 @@ utils.unlockWallet = function(opts, callback) {
   });
 };
 
-utils.getPrivateKeysWithABalance = function(callback) {
+utils.getPrivateKeysWithABalance = function(opts, callback) {
 
-  var self = this;
-  self.rpc.listUnspent(function(err, res) {
+  opts.rpc.listUnspent(function(err, res) {
 
     if(err) {
       return callback(err);
@@ -185,7 +185,7 @@ utils.getPrivateKeysWithABalance = function(callback) {
     }
     async.mapLimit(utxos, 8, function(utxo, callback) {
 
-      self.rpc.dumpPrivKey(utxo.address, function(err, res) {
+      opts.rpc.dumpPrivKey(utxo.address, function(err, res) {
         if(err) {
           return callback(err);
         }
@@ -203,11 +203,10 @@ utils.getPrivateKeysWithABalance = function(callback) {
 
 };
 
-utils.generateSpendingTxs = function(utxos) {
+utils.generateSpendingTxs = function(opts, utxos) {
 
-  var self = this;
   return utxos.map(function(utxo) {
-    self.txCount++;
+
     var toPrivKey = new PrivateKey('testnet'); //external addresses
     var changePrivKey = new PrivateKey('testnet'); //our wallet keys
     var utxoSatoshis = Unit.fromBTC(utxo.utxo.amount).satoshis;
@@ -216,12 +215,12 @@ utils.generateSpendingTxs = function(utxos) {
 
     tx.from(utxo.utxo);
     tx.to(toPrivKey.toAddress().toString(), satsToPrivKey);
-    tx.fee(self.fee);
+    tx.fee(opts.fee);
     tx.change(changePrivKey.toAddress().toString());
     tx.sign(utxo.privKey);
 
-    self.walletPrivKeys.push(changePrivKey);
-    self.satoshisReceived += Unit.fromBTC(utxo.utxo.amount).toSatoshis() - (satsToPrivKey + self.fee);
+    opts.walletPrivKeys.push(changePrivKey);
+    opts.satoshisReceived += Unit.fromBTC(utxo.utxo.amount).toSatoshis() - (satsToPrivKey + opts.fee);
     return tx;
   });
 
@@ -230,11 +229,12 @@ utils.generateSpendingTxs = function(utxos) {
 utils.setupInitialTxs = function(opts, callback) {
 
   var self = this;
-  self.getPrivateKeysWithABalance(function(err, utxos) {
+  self.getPrivateKeysWithABalance(opts, function(err, utxos) {
+
     if(err) {
       return callback(err);
     }
-    opts.initialTxs = self.generateSpendingTxs(utxos);
+    opts.initialTxs = self.generateSpendingTxs(opts, utxos);
     callback();
   });
 

@@ -8,7 +8,7 @@ var path = require('path');
 var utils = require('./utils');
 var crypto = require('crypto');
 
-var debug = false;
+var debug = true;
 var bitcoreDataDir = '/tmp/bitcore';
 var bitcoinDataDir = '/tmp/bitcoin';
 
@@ -23,7 +23,7 @@ var rpcConfig = {
 
 var bitcoin = {
   args: {
-    datadir: utils.bitcoinDataDir,
+    datadir: bitcoinDataDir,
     listen: 0,
     regtest: 1,
     server: 1,
@@ -84,12 +84,11 @@ var bitcore = {
 
 var opts = {
   debug: debug,
-  rpcConfig: rpcConfig,
   bitcore: bitcore,
   bitcoin: bitcoin,
   bitcoinDataDir: bitcoinDataDir,
   bitcoreDataDir: bitcoreDataDir,
-  rpc: new BitcoinRPC(utils.rpcConfig),
+  rpc: new BitcoinRPC(rpcConfig),
   walletPassphrase: 'test',
   txCount: 0,
   blockHeight: 0,
@@ -107,14 +106,16 @@ describe('Wallet Operations', function() {
 
   this.timeout(60000);
 
-  var mainOpts;
-  after(utils.cleanup.bind(utils, this.opts));
+  describe('Register, Upload, GetTransactions', function() {
 
-  describe('Register and Upload', function() {
+    var self = this;
+
+    after(function(done) {
+      utils.cleanup(self.opts, done);
+    });
 
     before(function(done) {
-      var self = this;
-      self.opts = mainOpts = Object.assign({}, opts);
+      self.opts = Object.assign({}, opts);
       async.series([
         utils.startBitcoind.bind(utils, self.opts),
         utils.waitForBitcoinReady.bind(utils, self.opts),
@@ -144,23 +145,21 @@ describe('Wallet Operations', function() {
       utils.uploadWallet.call(utils, self.opts, done);
     });
 
-  });
+    it('should get a list of transactions', function(done) {
 
-  describe('Load addresses at genesis block', function() {
-
-    before(function(done) {
-      self.opts = mainOpts;
       utils.sendTxs.call(utils, self.opts, function(err) {
+
         if(err) {
           return done(err);
         }
-        utils.waitForBitcoreNode.call(utils, self.opts, done);
+        utils.waitForBitcoreNode.call(utils, self.opts, function(err) {
+
+          if(err) {
+            return done(err);
+          }
+          utils.getListOfTxs.call(utils, self.opts, done);
+        });
       });
-    });
-
-    it('should get a list of transactions', function(done) {
-
-      utils.getListOfTxs.call(utils, self.opts, done);
 
     });
 
@@ -168,11 +167,14 @@ describe('Wallet Operations', function() {
 
   describe('Load addresses after syncing the blockchain', function() {
 
+    var self = this;
+
+    self.opts = Object.assign({}, opts);
+
+    after(utils.cleanup.bind(utils, self.opts));
+
     before(function(done) {
-      var self = this;
-      self.opts = Object.assign({}, opts);
       async.series([
-        utils.cleanup.bind(utils, self.opts),
         utils.startBitcoind.bind(utils, self.opts),
         utils.waitForBitcoinReady.bind(utils, self.opts),
         utils.unlockWallet.bind(utils, self.opts),
@@ -193,7 +195,11 @@ describe('Wallet Operations', function() {
 
     it('should get the balance of a wallet', function(done) {
 
-      var httpOpts = utils.getHttpOpts.call(utils, self.opts, { path: '/wallet-api/wallets/' + self.opts.walletId + '/balance' });
+      var httpOpts = utils.getHttpOpts.call(
+        utils,
+        self.opts,
+        { path: '/wallet-api/wallets/' + self.opts.walletId + '/balance' });
+
       utils.queryBitcoreNode.call(utils, httpOpts, function(err, res) {
         if(err) {
           return done(err);
@@ -207,11 +213,17 @@ describe('Wallet Operations', function() {
 
     it('should get the set of utxos for the wallet', function(done) {
 
-      var httpOpts = utils.getHttpOpts.call(utils, self.opts, { path: '/wallet-api/wallets/' + utils.walletId + '/utxos' });
+      var httpOpts = utils.getHttpOpts.call(
+        utils,
+        self.opts,
+        { path: '/wallet-api/wallets/' + utils.walletId + '/utxos' });
+
       utils.queryBitcoreNode.call(utils, httpOpts, function(err, res) {
+
         if(err) {
           return done(err);
         }
+
         var results = JSON.parse(res);
         var balance = 0;
 
