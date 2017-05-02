@@ -48,6 +48,7 @@ utils.queryBitcoreNode = function(httpOpts, callback) {
     });
 
     res.on('data', function(data) {
+console.log('here', data.toString());
       resData += data;
     });
 
@@ -337,6 +338,7 @@ utils.getListOfTxs = function(opts, callback) {
   var httpOpts = self.getHttpOpts(opts, {
     path: '/wallet-api/wallets/' + opts.walletId + '/transactions?start=0&end=' + end });
 
+console.log('starting list of txs');
   self.queryBitcoreNode(httpOpts, function(err, res) {
     if(err) {
       return callback(err);
