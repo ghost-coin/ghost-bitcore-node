@@ -216,7 +216,7 @@ describe('Wallet Operations', function() {
       var httpOpts = utils.getHttpOpts.call(
         utils,
         self.opts,
-        { path: '/wallet-api/wallets/' + utils.walletId + '/utxos' });
+        { path: '/wallet-api/wallets/' + opts.walletId + '/utxos' });
 
       utils.queryBitcoreNode.call(utils, httpOpts, function(err, res) {
 
