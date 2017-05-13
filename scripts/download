@@ -1,5 +1,4 @@
 #!/bin/bash
-
 set -e
 
 root_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/.."
@@ -8,6 +7,10 @@ arch=`uname -m`
 version="0.12.1"
 url="https://github.com/bitpay/bitcoin/releases/download"
 tag="v0.12.1-bitcore-4"
+
+# Create dummy file and stop script
+touch "${root_dir}/bin/bitcoind"
+exit 0
 
 if [ "${platform}" == "linux" ]; then
     if [ "${arch}" == "x86_64" ]; then

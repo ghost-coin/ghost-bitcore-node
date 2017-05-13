@@ -1,10 +1,10 @@
-# Bitcoin Service
+# Particl Service
 
-The Bitcoin Service is a Node.js interface to [Bitcoin Core](https://github.com/bitcoin/bitcoin) for querying information about the bitcoin block chain. It will manage starting and stopping `bitcoind` or connect to several running `bitcoind` processes. It uses a branch of a [branch of Bitcoin Core](https://github.com/bitpay/bitcoin/tree/0.12.1-bitcore) with additional indexes for querying information about addresses and blocks. Results are cached for performance and there are several additional API methods added for common queries.
+The Particl Service is a Node.js interface to [Particl Core](https://github.com/particl/particl-core) for querying information about the particl block chain. It will manage starting and stopping `particld` or connect to several running `particld` processes. It uses an instance of a Particl with additional indexes enabled for querying information about addresses and blocks. Results are cached for performance and there are several additional API methods added for common queries.
 
 ## Configuration
 
-The default configuration will include a "spawn" configuration in "bitcoind". This defines the location of the block chain database and the location of the `bitcoind` daemon executable. The below configuration points to a local clone of `bitcoin`, and will start `bitcoind` automatically with your Node.js application.
+The default configuration will include a "spawn" configuration in "particld". This defines the location of the block chain database and the location of the `particld` daemon executable. The below configuration points to a local clone of `particl`, and will start `particld` automatically with your Node.js application.
 
 ```json
   "servicesConfig": {
@@ -17,7 +17,7 @@ The default configuration will include a "spawn" configuration in "bitcoind". Th
   }
 ```
 
-It's also possible to connect to separately managed `bitcoind` processes with round-robin quering, for example:
+It's also possible to connect to separately managed `particld` processes with round-robin quering, for example:
 
 ```json
   "servicesConfig": {
