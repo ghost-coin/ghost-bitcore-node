@@ -45,8 +45,8 @@
   ],
   "dependencies": {
     "async": "^1.3.0",
-    "particl-bitcoind-rpc": "file:../particl-bitcoind-rpc",
-    "particl-bitcore-lib": "file:../particl-bitcore-lib",
+    "particl-bitcoind-rpc": "git://github.com/particl/particl-bitcoind-rpc",
+    "particl-bitcore-lib": "git://github.com/particl/particl-bitcore-lib",
     "body-parser": "^1.13.3",
     "colors": "^1.1.2",
     "commander": "^2.8.1",
