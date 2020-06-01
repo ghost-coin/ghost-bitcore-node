@@ -94,8 +94,8 @@ describe('#add', function() {
       var callCount = 0;
       var oldPackage = {
         dependencies: {
-          'particl-bitcore-lib': 'file:../particl-bitcore-lib',
-          'particl-bitcore-node': 'file:../particl-bitcore-node'
+          'ghost-bitcore-lib': 'file:../ghost-bitcore-lib',
+          'ghost-bitcore-node': 'file:../ghost-bitcore-node'
         }
       };
       var spawn = sinon.stub().returns({

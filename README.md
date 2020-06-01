@@ -1,7 +1,7 @@
 Bitcore Node
 ============
 
-A Particl full node for building applications and services with Node.js. A node is extensible and can be configured to run additional services. At the minimum a node has an interface to Particl Core (with additional indexing enabled) for more advanced address queries. Additional services can be enabled to make a node more useful such as exposing new APIs, running a block explorer and wallet service.
+A Ghost full node for building applications and services with Node.js. A node is extensible and can be configured to run additional services. At the minimum a node has an interface to Ghost Core (with additional indexing enabled) for more advanced address queries. Additional services can be enabled to make a node more useful such as exposing new APIs, running a block explorer and wallet service.
 
 ## Install
 
@@ -35,15 +35,15 @@ This will create a directory with configuration files for your node and install 
 
 There are several add-on services available to extend the functionality of Bitcore:
 
-- [Insight API](https://github.com/particl/particl-insight-api)
-- [Insight UI](https://github.com/particl/particl-insight-ui)
+- [Insight API](https://github.com/ghost-coin/ghost-insight-api)
+- [Insight UI](https://github.com/ghost-coin/ghost-insight-ui)
 - [Bitcore Wallet Service](https://github.com/bitpay/bitcore-wallet-service)
 
 ## Documentation
 
 - [Upgrade Notes](docs/upgrade.md)
 - [Services](docs/services.md)
-  - [Bitcoind](docs/services/bitcoind.md) - Interface to Particl Core
+  - [Bitcoind](docs/services/bitcoind.md) - Interface to Ghost Core
   - [Web](docs/services/web.md) - Creates an express application over which services can expose their web/API content
 - [Development Environment](docs/development.md) - Guide for setting up a development environment
 - [Node](docs/node.md) - Details on the node constructor
@@ -56,7 +56,7 @@ Please send pull requests for bug fixes, code optimization, and ideas for improv
 
 ## License
 
-Code released under [the MIT license](https://github.com/particl/particl-bitcore-node/blob/master/LICENSE).
+Code released under [the MIT license](https://github.com/ghost-coin/ghost-bitcore-node/blob/master/LICENSE).
 
 Copyright 2013-2015 BitPay, Inc.
 
