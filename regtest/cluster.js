@@ -4,9 +4,9 @@ var path = require('path');
 var async = require('async');
 var spawn = require('child_process').spawn;
 
-var BitcoinRPC = require('particl-bitcoind-rpc');
+var BitcoinRPC = require('ghost-bitcoind-rpc');
 var rimraf = require('rimraf');
-var bitcore = require('particl-bitcore-lib');
+var bitcore = require('ghost-bitcore-lib');
 var chai = require('chai');
 var should = chai.should();
 
@@ -19,7 +19,7 @@ var BitcoinService = index.services.Bitcoin;
 describe('Bitcoin Cluster', function() {
   var node;
   var daemons = [];
-  var execPath = path.resolve(__dirname, '../bin/particld');
+  var execPath = path.resolve(__dirname, '../bin/ghostd');
   var nodesConf = [
     {
       datadir: path.resolve(__dirname, './data/node1'),

@@ -9,7 +9,7 @@ var log = index.log;
 log.debug = function() {};
 
 var chai = require('chai');
-var bitcore = require('particl-bitcore-lib');
+var bitcore = require('ghost-bitcore-lib');
 var rimraf = require('rimraf');
 var node;
 
@@ -53,7 +53,7 @@ describe('Node Functionality', function() {
             config: {
               spawn: {
                 datadir: datadir,
-                exec: path.resolve(__dirname, '../bin/particld')
+                exec: path.resolve(__dirname, '../bin/ghostd')
               }
             }
           }

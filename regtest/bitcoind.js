@@ -7,7 +7,7 @@ var index = require('..');
 var log = index.log;
 
 var chai = require('chai');
-var bitcore = require('particl-bitcore-lib');
+var bitcore = require('ghost-bitcore-lib');
 var BN = bitcore.crypto.BN;
 var async = require('async');
 var rimraf = require('rimraf');
@@ -17,7 +17,7 @@ var bitcoind;
 var should = chai.should();
 var assert = chai.assert;
 var sinon = require('sinon');
-var BitcoinRPC = require('particl-bitcoind-rpc');
+var BitcoinRPC = require('ghost-bitcoind-rpc');
 var transactionData = [];
 var blockHashes = [];
 var utxos;
@@ -46,7 +46,7 @@ describe('Bitcoind Functionality', function() {
       bitcoind = require('../').services.Bitcoin({
         spawn: {
           datadir: datadir,
-          exec: path.resolve(__dirname, '../bin/particld')
+          exec: path.resolve(__dirname, '../bin/ghostd')
         },
         node: {
           network: regtestNetwork,
