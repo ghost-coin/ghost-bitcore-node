@@ -1,13 +1,13 @@
 {
-  "name": "particl-bitcore-node",
+  "name": "ghost-bitcore-node",
   "description": "Full node with extended capabilities using Bitcore and Bitcoin Core",
   "author": "BitPay <dev@bitpay.com>",
   "version": "3.1.4",
   "main": "./index.js",
-  "repository": "git://github.com/particl/particl-bitcore-node.git",
-  "homepage": "https://github.com/particl/particl-bitcore-node",
+  "repository": "git://github.com/ghost-coin/ghost-bitcore-node.git",
+  "homepage": "https://github.com/ghost-coin/ghost-bitcore-node",
   "bugs": {
-    "url": "https://github.com/particl/particl-bitcore-node/issues"
+    "url": "https://github.com/ghost-coin/ghost-bitcore-node/issues"
   },
   "contributors": [
     {
@@ -54,8 +54,8 @@
     "liftoff": "^2.3.0",
     "lru-cache": "^4.0.1",
     "mkdirp": "0.5.0",
-    "particl-bitcoind-rpc": "git://github.com/particl/particl-bitcoind-rpc",
-    "particl-bitcore-lib": "git://github.com/particl/particl-bitcore-lib",
+    "ghost-bitcoind-rpc": "git://github.com/ghost-coin/ghost-bitcoind-rpc",
+    "ghost-bitcore-lib": "git://github.com/ghost-coin/ghost-bitcore-lib",
     "path-is-absolute": "^1.0.0",
     "semver": "^5.0.1",
     "socket.io": "^1.4.5",

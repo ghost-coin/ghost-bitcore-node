@@ -1,6 +1,6 @@
 # Release Process
 
-Binaries for particld are distributed for convenience and built deterministically with Gitian, signatures for particld are located at the  respository.
+Binaries for ghostd are distributed for convenience and built deterministically with Gitian, signatures for ghostd are located at the  respository.
 
 ## How to Release
 
