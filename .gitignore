@@ -25,6 +25,7 @@ coverage/*
 .DS_Store
 bin/bitcoin*
 bin/particl*
+bin/ghost*
 bin/SHA256SUMS.asc
 regtest/data/node1/regtest
 regtest/data/node2/regtest
